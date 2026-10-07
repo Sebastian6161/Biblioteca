@@ -134,4 +134,26 @@ public class LibroDAO {
             return false;
         }
     }
+    public boolean actualizarStock(int idLibro, int nuevoStock) {
+        String sql = """
+            UPDATE libros
+            SET stock = ?
+            WHERE id = ?
+            """;
+
+        try (PreparedStatement ps = DatabaseConnection.getInstance()
+                .getConnection().prepareStatement(sql)) {
+
+            ps.setInt(1, nuevoStock);
+            ps.setInt(2, idLibro);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println(
+                    "Error al actualizar stock: " + e.getMessage()
+            );
+            return false;
+        }
+    }
 }
