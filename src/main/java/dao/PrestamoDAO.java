@@ -1,3 +1,4 @@
+
 package dao;
 
 import modelo.Prestamo;
@@ -9,6 +10,7 @@ import java.util.List;
 public class PrestamoDAO {
 
     public boolean insertar(Prestamo prestamo) {
+
         String sql = """
                 INSERT INTO prestamos
                 (id_estudiante, id_libro, fecha_prestamo,
@@ -16,8 +18,13 @@ public class PrestamoDAO {
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql)) {
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, prestamo.getIdEstudiante());
             ps.setInt(2, prestamo.getIdLibro());
@@ -28,29 +35,43 @@ public class PrestamoDAO {
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al insertar préstamo: " + e.getMessage()
+                    "Error al insertar préstamo: "
+                            + e.getMessage()
             );
+
             return false;
         }
     }
 
     public List<Prestamo> listar() {
+
         List<Prestamo> prestamos = new ArrayList<>();
 
         String sql = "SELECT * FROM prestamos ORDER BY id";
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql);
+
+                ResultSet rs = ps.executeQuery()
+        ) {
 
             while (rs.next()) {
-                prestamos.add(crearPrestamoDesdeResultSet(rs));
+                prestamos.add(
+                        crearPrestamoDesdeResultSet(rs)
+                );
             }
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al listar préstamos: " + e.getMessage()
+                    "Error al listar préstamos: "
+                            + e.getMessage()
             );
         }
 
@@ -58,10 +79,17 @@ public class PrestamoDAO {
     }
 
     public Prestamo buscarPorId(int id) {
-        String sql = "SELECT * FROM prestamos WHERE id = ?";
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql)) {
+        String sql =
+                "SELECT * FROM prestamos WHERE id = ?";
+
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, id);
 
@@ -73,8 +101,10 @@ public class PrestamoDAO {
             }
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al buscar préstamo: " + e.getMessage()
+                    "Error al buscar préstamo: "
+                            + e.getMessage()
             );
         }
 
@@ -82,6 +112,7 @@ public class PrestamoDAO {
     }
 
     public boolean actualizar(Prestamo prestamo) {
+
         String sql = """
                 UPDATE prestamos
                 SET id_estudiante = ?,
@@ -92,8 +123,13 @@ public class PrestamoDAO {
                 WHERE id = ?
                 """;
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql)) {
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, prestamo.getIdEstudiante());
             ps.setInt(2, prestamo.getIdLibro());
@@ -105,32 +141,46 @@ public class PrestamoDAO {
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al actualizar préstamo: " + e.getMessage()
+                    "Error al actualizar préstamo: "
+                            + e.getMessage()
             );
+
             return false;
         }
     }
 
     public boolean eliminar(int id) {
-        String sql = "DELETE FROM prestamos WHERE id = ?";
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql)) {
+        String sql =
+                "DELETE FROM prestamos WHERE id = ?";
+
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, id);
 
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al eliminar préstamo: " + e.getMessage()
+                    "Error al eliminar préstamo: "
+                            + e.getMessage()
             );
+
             return false;
         }
     }
 
     public List<Prestamo> listarActivos() {
+
         List<Prestamo> prestamos = new ArrayList<>();
 
         String sql = """
@@ -139,25 +189,36 @@ public class PrestamoDAO {
                 ORDER BY fecha_devolucion
                 """;
 
-        try (PreparedStatement ps = DatabaseConnection.getInstance()
-                .getConnection().prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (
+                Connection conexion = DatabaseConnection
+                        .getInstance().getConnection();
+
+                PreparedStatement ps =
+                        conexion.prepareStatement(sql);
+
+                ResultSet rs = ps.executeQuery()
+        ) {
 
             while (rs.next()) {
-                prestamos.add(crearPrestamoDesdeResultSet(rs));
+                prestamos.add(
+                        crearPrestamoDesdeResultSet(rs)
+                );
             }
 
         } catch (SQLException e) {
+
             System.err.println(
-                    "Error al listar préstamos activos: " + e.getMessage()
+                    "Error al listar préstamos activos: "
+                            + e.getMessage()
             );
         }
 
         return prestamos;
     }
 
-    private Prestamo crearPrestamoDesdeResultSet(ResultSet rs)
-            throws SQLException {
+    private Prestamo crearPrestamoDesdeResultSet(
+            ResultSet rs
+    ) throws SQLException {
 
         return new Prestamo(
                 rs.getInt("id"),
@@ -168,4 +229,32 @@ public class PrestamoDAO {
                 rs.getBoolean("devuelto")
         );
     }
+
+    public boolean tienePrestamos(
+            int idEstudiante,
+            Connection conexion
+    ) throws SQLException {
+
+        String sql = """
+            SELECT COUNT(*)
+            FROM prestamos
+            WHERE id_estudiante = ?
+            """;
+
+        try (PreparedStatement ps =
+                     conexion.prepareStatement(sql)) {
+
+            ps.setInt(1, idEstudiante);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+
+        return false;
+    }
+
 }

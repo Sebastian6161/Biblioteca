@@ -139,11 +139,21 @@ public class ServicioPrestamo {
         } finally {
 
             if (conexion != null) {
+
                 try {
                     conexion.setAutoCommit(true);
                 } catch (SQLException e) {
                     System.err.println(
                             "Error al restaurar AutoCommit: "
+                                    + e.getMessage()
+                    );
+                }
+
+                try {
+                    conexion.close();
+                } catch (SQLException e) {
+                    System.err.println(
+                            "Error al cerrar conexión: "
                                     + e.getMessage()
                     );
                 }
@@ -259,11 +269,21 @@ public class ServicioPrestamo {
         } finally {
 
             if (conexion != null) {
+
                 try {
                     conexion.setAutoCommit(true);
                 } catch (SQLException e) {
                     System.err.println(
                             "Error al restaurar AutoCommit: "
+                                    + e.getMessage()
+                    );
+                }
+
+                try {
+                    conexion.close();
+                } catch (SQLException e) {
+                    System.err.println(
+                            "Error al cerrar conexión: "
                                     + e.getMessage()
                     );
                 }

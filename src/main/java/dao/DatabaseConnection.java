@@ -1,3 +1,4 @@
+
 package dao;
 
 import java.sql.Connection;
@@ -9,27 +10,17 @@ public class DatabaseConnection {
     private static DatabaseConnection instance;
 
     private static final String URL =
-            "jdbc:mysql://localhost:3306/biblioteca?useSSL=false&serverTimezone=America/Santiago";
+            "jdbc:mysql://localhost:3306/biblioteca"
+                    + "?useSSL=false"
+                    + "&serverTimezone=America/Santiago";
 
     private static final String USER = "root";
-    private static final String PASSWORD = "Admin1234!";
-
-    private Connection connection;
 
     private DatabaseConnection() {
-        conectar();
-    }
-
-    private void conectar() {
-        try {
-            connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (SQLException e) {
-            System.err.println("Error al conectar con la base de datos: "
-                    + e.getMessage());
-        }
     }
 
     public static synchronized DatabaseConnection getInstance() {
+
         if (instance == null) {
             instance = new DatabaseConnection();
         }
@@ -39,10 +30,19 @@ public class DatabaseConnection {
 
     public Connection getConnection() throws SQLException {
 
-        if (connection == null || connection.isClosed()) {
-            conectar();
+        String password =
+                System.getenv("BIBLIOTECA_DB_PASSWORD");
+
+        if (password == null) {
+            throw new SQLException(
+                    "Falta configurar BIBLIOTECA_DB_PASSWORD."
+            );
         }
 
-        return connection;
+        return DriverManager.getConnection(
+                URL,
+                USER,
+                password
+        );
     }
 }

@@ -121,6 +121,9 @@ public class VentanaPrincipal extends JFrame {
 
             JButton btnEstudiantes =
                     crearBoton("Estudiantes");
+            btnEstudiantes.addActionListener(
+                    e -> mostrarPanelEstudiantes()
+            );
 
             JButton btnReportes =
                     crearBoton("Reportes");
@@ -335,6 +338,33 @@ public class VentanaPrincipal extends JFrame {
 
         panelContenido.add(
                 panelLibros,
+                BorderLayout.CENTER
+        );
+
+        actualizarContenido();
+    }
+    private void mostrarPanelEstudiantes() {
+
+        if (!"bibliotecario".equalsIgnoreCase(
+                usuario.getRol())) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No tiene permisos para gestionar estudiantes.",
+                    "Acceso denegado",
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            return;
+        }
+
+        panelContenido.removeAll();
+
+        PanelEstudiantes panelEstudiantes =
+                new PanelEstudiantes();
+
+        panelContenido.add(
+                panelEstudiantes,
                 BorderLayout.CENTER
         );
 
