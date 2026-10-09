@@ -1,3 +1,4 @@
+
 package vista;
 
 import modelo.Usuario;
@@ -8,33 +9,40 @@ import java.awt.*;
 public class VentanaPrincipal extends JFrame {
 
     private final Usuario usuario;
-
     private JPanel panelContenido;
 
     public VentanaPrincipal(Usuario usuario) {
-
         this.usuario = usuario;
 
         configurarVentana();
         crearInterfaz();
     }
 
+    // ==========================================
+    // CONFIGURACIÓN DE LA VENTANA
+    // ==========================================
+
     private void configurarVentana() {
 
         setTitle("Biblioteca Escolar - Sistema de Gestión");
         setSize(1000, 650);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setMinimumSize(new Dimension(900, 550));
     }
 
+    // ==========================================
+    // CREACIÓN DE LA INTERFAZ
+    // ==========================================
+
     private void crearInterfaz() {
 
         setLayout(new BorderLayout());
 
-        // =========================
+        // ======================================
         // CABECERA
-        // =========================
+        // ======================================
 
         JPanel panelSuperior = new JPanel(
                 new BorderLayout()
@@ -46,8 +54,9 @@ public class VentanaPrincipal extends JFrame {
                 )
         );
 
-        JLabel lblTitulo =
-                new JLabel("Biblioteca Escolar");
+        JLabel lblTitulo = new JLabel(
+                "Biblioteca Escolar"
+        );
 
         lblTitulo.setFont(
                 new Font("Arial", Font.BOLD, 22)
@@ -74,9 +83,9 @@ public class VentanaPrincipal extends JFrame {
                 BorderLayout.NORTH
         );
 
-        // =========================
+        // ======================================
         // MENÚ LATERAL
-        // =========================
+        // ======================================
 
         JPanel panelMenu = new JPanel();
 
@@ -97,17 +106,10 @@ public class VentanaPrincipal extends JFrame {
                 new Dimension(210, 0)
         );
 
-        JButton btnInicio =
-                crearBoton("Inicio");
-
-        JButton btnLibros =
-                crearBoton("Libros");
-
-        JButton btnPrestamos =
-                crearBoton("Préstamos");
-
-        JButton btnDevoluciones =
-                crearBoton("Devoluciones");
+        JButton btnInicio = crearBoton("Inicio");
+        JButton btnLibros = crearBoton("Libros");
+        JButton btnPrestamos = crearBoton("Préstamos");
+        JButton btnDevoluciones = crearBoton("Devoluciones");
 
         panelMenu.add(btnInicio);
         panelMenu.add(Box.createVerticalStrut(10));
@@ -115,39 +117,42 @@ public class VentanaPrincipal extends JFrame {
         panelMenu.add(btnLibros);
         panelMenu.add(Box.createVerticalStrut(10));
 
-        // Opciones exclusivas del bibliotecario
-        if ("bibliotecario".equalsIgnoreCase(
-                usuario.getRol())) {
+        // ======================================
+        // OPCIONES DEL BIBLIOTECARIO
+        // ======================================
+
+        if (esBibliotecario()) {
 
             JButton btnEstudiantes =
                     crearBoton("Estudiantes");
-            btnEstudiantes.addActionListener(
-                    e -> mostrarPanelEstudiantes()
-            );
 
             JButton btnReportes =
                     crearBoton("Reportes");
 
             panelMenu.add(btnEstudiantes);
-            panelMenu.add(
-                    Box.createVerticalStrut(10)
-            );
+            panelMenu.add(Box.createVerticalStrut(10));
 
             panelMenu.add(btnReportes);
-            panelMenu.add(
-                    Box.createVerticalStrut(10)
+            panelMenu.add(Box.createVerticalStrut(10));
+
+            btnEstudiantes.addActionListener(
+                    e -> mostrarPanelEstudiantes()
+            );
+
+            btnReportes.addActionListener(
+                    e -> mostrarPanelReportes()
             );
         }
 
+        // ======================================
+        // OPCIONES COMPARTIDAS
+        // ======================================
+
         panelMenu.add(btnPrestamos);
-        panelMenu.add(
-                Box.createVerticalStrut(10)
-        );
+        panelMenu.add(Box.createVerticalStrut(10));
 
         panelMenu.add(btnDevoluciones);
-        panelMenu.add(
-                Box.createVerticalGlue()
-        );
+        panelMenu.add(Box.createVerticalGlue());
 
         JButton btnCerrarSesion =
                 crearBoton("Cerrar sesión");
@@ -159,12 +164,13 @@ public class VentanaPrincipal extends JFrame {
                 BorderLayout.WEST
         );
 
-        // =========================
-        // CONTENIDO
-        // =========================
+        // ======================================
+        // PANEL DE CONTENIDO
+        // ======================================
 
-        panelContenido =
-                new JPanel(new BorderLayout());
+        panelContenido = new JPanel(
+                new BorderLayout()
+        );
 
         panelContenido.setBorder(
                 BorderFactory.createEmptyBorder(
@@ -179,9 +185,9 @@ public class VentanaPrincipal extends JFrame {
 
         mostrarInicio();
 
-        // =========================
+        // ======================================
         // EVENTOS
-        // =========================
+        // ======================================
 
         btnInicio.addActionListener(
                 e -> mostrarInicio()
@@ -204,6 +210,21 @@ public class VentanaPrincipal extends JFrame {
         );
     }
 
+    // ==========================================
+    // VALIDACIÓN DE ROL
+    // ==========================================
+
+    private boolean esBibliotecario() {
+
+        return "bibliotecario".equalsIgnoreCase(
+                usuario.getRol()
+        );
+    }
+
+    // ==========================================
+    // CREACIÓN DE BOTONES
+    // ==========================================
+
     private JButton crearBoton(String texto) {
 
         JButton boton = new JButton(texto);
@@ -222,42 +243,33 @@ public class VentanaPrincipal extends JFrame {
         return boton;
     }
 
+    // ==========================================
+    // PANTALLA DE INICIO
+    // ==========================================
+
     private void mostrarInicio() {
 
         panelContenido.removeAll();
 
-        JPanel panelInicio =
-                new JPanel(new GridLayout(
-                        3,
-                        1,
-                        10,
-                        10
-                ));
-
-        JLabel lblBienvenida =
-                new JLabel(
-                        "Bienvenido/a, "
-                                + usuario.getNombre()
-                );
-
-        lblBienvenida.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        26
-                )
+        JPanel panelInicio = new JPanel(
+                new GridLayout(3, 1, 10, 10)
         );
 
-        JLabel lblRol =
-                new JLabel(
-                        "Rol: "
-                                + usuario.getRol()
-                );
+        JLabel lblBienvenida = new JLabel(
+                "Bienvenido/a, " + usuario.getNombre()
+        );
 
-        JLabel lblDescripcion =
-                new JLabel(
-                        "Seleccione una opción del menú para comenzar."
-                );
+        lblBienvenida.setFont(
+                new Font("Arial", Font.BOLD, 26)
+        );
+
+        JLabel lblRol = new JLabel(
+                "Rol: " + usuario.getRol()
+        );
+
+        JLabel lblDescripcion = new JLabel(
+                "Seleccione una opción del menú para comenzar."
+        );
 
         panelInicio.add(lblBienvenida);
         panelInicio.add(lblRol);
@@ -271,60 +283,10 @@ public class VentanaPrincipal extends JFrame {
         actualizarContenido();
     }
 
-    private void mostrarMensajeTemporal(
-            String titulo
-    ) {
+    // ==========================================
+    // PANEL DE LIBROS
+    // ==========================================
 
-        panelContenido.removeAll();
-
-        JLabel label =
-                new JLabel(
-                        titulo,
-                        SwingConstants.CENTER
-                );
-
-        label.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        24
-                )
-        );
-
-        panelContenido.add(
-                label,
-                BorderLayout.CENTER
-        );
-
-        actualizarContenido();
-    }
-
-    private void actualizarContenido() {
-
-        panelContenido.revalidate();
-        panelContenido.repaint();
-    }
-
-    private void cerrarSesion() {
-
-        int opcion =
-                JOptionPane.showConfirmDialog(
-                        this,
-                        "¿Desea cerrar la sesión?",
-                        "Cerrar sesión",
-                        JOptionPane.YES_NO_OPTION
-                );
-
-        if (opcion == JOptionPane.YES_OPTION) {
-
-            dispose();
-
-            VentanaLogin login =
-                    new VentanaLogin();
-
-            login.setVisible(true);
-        }
-    }
     private void mostrarPanelLibros() {
 
         panelContenido.removeAll();
@@ -339,16 +301,17 @@ public class VentanaPrincipal extends JFrame {
 
         actualizarContenido();
     }
+
+    // ==========================================
+    // PANEL DE ESTUDIANTES
+    // ==========================================
+
     private void mostrarPanelEstudiantes() {
 
-        if (!"bibliotecario".equalsIgnoreCase(
-                usuario.getRol())) {
+        if (!esBibliotecario()) {
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "No tiene permisos para gestionar estudiantes.",
-                    "Acceso denegado",
-                    JOptionPane.WARNING_MESSAGE
+            mostrarAccesoDenegado(
+                    "No tiene permisos para gestionar estudiantes."
             );
 
             return;
@@ -366,6 +329,39 @@ public class VentanaPrincipal extends JFrame {
 
         actualizarContenido();
     }
+
+    // ==========================================
+    // PANEL DE REPORTES
+    // ==========================================
+
+    private void mostrarPanelReportes() {
+
+        if (!esBibliotecario()) {
+
+            mostrarAccesoDenegado(
+                    "No tiene permisos para consultar los reportes."
+            );
+
+            return;
+        }
+
+        panelContenido.removeAll();
+
+        PanelReportes panelReportes =
+                new PanelReportes();
+
+        panelContenido.add(
+                panelReportes,
+                BorderLayout.CENTER
+        );
+
+        actualizarContenido();
+    }
+
+    // ==========================================
+    // PANEL DE PRÉSTAMOS
+    // ==========================================
+
     private void mostrarPanelPrestamos() {
 
         panelContenido.removeAll();
@@ -380,6 +376,11 @@ public class VentanaPrincipal extends JFrame {
 
         actualizarContenido();
     }
+
+    // ==========================================
+    // PANEL DE DEVOLUCIONES
+    // ==========================================
+
     private void mostrarPanelDevoluciones() {
 
         panelContenido.removeAll();
@@ -393,5 +394,55 @@ public class VentanaPrincipal extends JFrame {
         );
 
         actualizarContenido();
+    }
+
+    // ==========================================
+    // MENSAJE DE ACCESO DENEGADO
+    // ==========================================
+
+    private void mostrarAccesoDenegado(
+            String mensaje
+    ) {
+
+        JOptionPane.showMessageDialog(
+                this,
+                mensaje,
+                "Acceso denegado",
+                JOptionPane.WARNING_MESSAGE
+        );
+    }
+
+    // ==========================================
+    // ACTUALIZACIÓN DE LA INTERFAZ
+    // ==========================================
+
+    private void actualizarContenido() {
+
+        panelContenido.revalidate();
+        panelContenido.repaint();
+    }
+
+    // ==========================================
+    // CERRAR SESIÓN
+    // ==========================================
+
+    private void cerrarSesion() {
+
+        int opcion = JOptionPane.showConfirmDialog(
+                this,
+                "¿Desea cerrar la sesión?",
+                "Cerrar sesión",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (opcion == JOptionPane.YES_OPTION) {
+
+            dispose();
+
+            VentanaLogin login =
+                    new VentanaLogin();
+
+            login.setVisible(true);
+        }
     }
 }
