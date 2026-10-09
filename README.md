@@ -157,5 +157,3 @@ El módulo de reportes permite consultar:
 ## Ejecución y entrega
 
 El proyecto incluye el código fuente Java, configuración Maven, scripts SQL y la posibilidad de generar un JAR ejecutable con sus dependencias.
-
-**Proyecto académico:** Evaluación Final Transversal — Sistema de Gestión de Biblioteca Escolar.
