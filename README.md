@@ -137,6 +137,25 @@ java -jar .\target\BibliotecaEFT.jar
 
 También es posible iniciar el proyecto desde IntelliJ ejecutando la clase `main.Main`.
 
+### 5. Credenciales de demostración
+
+Después de importar los scripts SQL, puedes iniciar sesión con:
+
+**Bibliotecario**                           
+- Correo: `antonia@correo.cl`               
+- Contraseña: `clave123`
+- Permisos: administración de libros, categorías, estudiantes, préstamos, devoluciones y reportes.
+
+**Estudiante**
+- Correo: `carlos@correo.cl`
+- Contraseña: `clave123`
+- Permisos: consulta del catálogo, préstamos y devoluciones según las restricciones del sistema.  
+
+Estas credenciales corresponden exclusivamente a los datos de prueba incluidos en el script de poblado.
+Las credenciales en el correo de Estudiante varia según el usuario que se conecte.
+
+**NOTA**: La contraseña de MySQL es independiente de estas credenciales y debe configurarse mediante la variable de entorno BIBLIOTECA_DB_PASSWORD.
+
 ## Seguridad y control de acceso
 
 El sistema distingue entre los roles de **bibliotecario** y **estudiante**.
