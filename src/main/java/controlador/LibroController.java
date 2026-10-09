@@ -91,7 +91,6 @@ public class LibroController {
                 return categoria.getNombre();
             }
         }
-
         return "Sin categoría";
     }
 }

@@ -192,15 +192,11 @@ public class VentanaPrincipal extends JFrame {
         );
 
         btnPrestamos.addActionListener(
-                e -> mostrarMensajeTemporal(
-                        "Gestión de préstamos"
-                )
+                e -> mostrarPanelPrestamos()
         );
 
         btnDevoluciones.addActionListener(
-                e -> mostrarMensajeTemporal(
-                        "Gestión de devoluciones"
-                )
+                e -> mostrarPanelDevoluciones()
         );
 
         btnCerrarSesion.addActionListener(
@@ -365,6 +361,34 @@ public class VentanaPrincipal extends JFrame {
 
         panelContenido.add(
                 panelEstudiantes,
+                BorderLayout.CENTER
+        );
+
+        actualizarContenido();
+    }
+    private void mostrarPanelPrestamos() {
+
+        panelContenido.removeAll();
+
+        PanelPrestamos panelPrestamos =
+                new PanelPrestamos(usuario);
+
+        panelContenido.add(
+                panelPrestamos,
+                BorderLayout.CENTER
+        );
+
+        actualizarContenido();
+    }
+    private void mostrarPanelDevoluciones() {
+
+        panelContenido.removeAll();
+
+        PanelDevoluciones panelDevoluciones =
+                new PanelDevoluciones(usuario);
+
+        panelContenido.add(
+                panelDevoluciones,
                 BorderLayout.CENTER
         );
 

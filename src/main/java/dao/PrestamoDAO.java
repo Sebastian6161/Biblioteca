@@ -256,5 +256,4 @@ public class PrestamoDAO {
 
         return false;
     }
-
 }

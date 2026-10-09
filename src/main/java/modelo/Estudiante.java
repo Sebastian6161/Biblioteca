@@ -26,4 +26,9 @@ public class Estudiante extends Persona {
     public String obtenerTipoPersona() {
         return "Estudiante - " + curso;
     }
+
+    @Override
+    public String toString() {
+        return getNombre() + " - " + getRut();
+    }
 }

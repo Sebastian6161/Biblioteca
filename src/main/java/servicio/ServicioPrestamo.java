@@ -1,7 +1,8 @@
+
 package servicio;
 
 import dao.DatabaseConnection;
-import modelo.Prestamo;
+import modelo.Usuario;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,10 +12,21 @@ import java.time.LocalDate;
 
 public class ServicioPrestamo {
 
+    // ==========================================
+    // REGISTRAR PRÉSTAMO
+    // ==========================================
+
     public synchronized boolean registrarPrestamo(
             int idEstudiante,
-            int idLibro
+            int idLibro,
+            Usuario usuario
     ) {
+
+        if (!tieneRolValido(usuario)
+                || idEstudiante <= 0
+                || idLibro <= 0) {
+            return false;
+        }
 
         Connection conexion = null;
 
@@ -25,7 +37,38 @@ public class ServicioPrestamo {
 
             conexion.setAutoCommit(false);
 
-            // 1. Consultar y bloquear el libro durante la operación
+            // 1. Validar estudiante y permisos
+            String sqlEstudiante = """
+                    SELECT rut
+                    FROM estudiantes
+                    WHERE id = ?
+                    """;
+
+            try (PreparedStatement ps =
+                         conexion.prepareStatement(sqlEstudiante)) {
+
+                ps.setInt(1, idEstudiante);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (!rs.next()) {
+                        conexion.rollback();
+                        return false;
+                    }
+
+                    String rutEstudiante = rs.getString("rut");
+
+                    if (!tienePermisoSobreRut(
+                            usuario,
+                            rutEstudiante
+                    )) {
+                        conexion.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            // 2. Bloquear libro y consultar stock
             String sqlStock = """
                     SELECT stock
                     FROM libros
@@ -43,7 +86,6 @@ public class ServicioPrestamo {
                 try (ResultSet rs = ps.executeQuery()) {
 
                     if (!rs.next()) {
-                        System.err.println("El libro no existe.");
                         conexion.rollback();
                         return false;
                     }
@@ -52,22 +94,26 @@ public class ServicioPrestamo {
                 }
             }
 
-            // 2. Comprobar disponibilidad
             if (stockActual <= 0) {
-                System.err.println("El libro no tiene stock disponible.");
+                System.err.println(
+                        "El libro no tiene stock disponible."
+                );
+
                 conexion.rollback();
                 return false;
             }
 
-            // 3. Calcular fechas automáticamente
+            // 3. Calcular fechas
             LocalDate fechaPrestamo = LocalDate.now();
-            LocalDate fechaDevolucion = fechaPrestamo.plusDays(7);
+            LocalDate fechaDevolucion =
+                    fechaPrestamo.plusDays(7);
 
-            // 4. Registrar préstamo
+            // 4. Insertar préstamo
             String sqlPrestamo = """
                     INSERT INTO prestamos
-                    (id_estudiante, id_libro, fecha_prestamo,
-                     fecha_devolucion, devuelto)
+                    (id_estudiante, id_libro,
+                     fecha_prestamo, fecha_devolucion,
+                     devuelto)
                     VALUES (?, ?, ?, ?, FALSE)
                     """;
 
@@ -76,33 +122,45 @@ public class ServicioPrestamo {
 
                 ps.setInt(1, idEstudiante);
                 ps.setInt(2, idLibro);
+
                 ps.setDate(
                         3,
                         java.sql.Date.valueOf(fechaPrestamo)
                 );
+
                 ps.setDate(
                         4,
                         java.sql.Date.valueOf(fechaDevolucion)
                 );
 
-                ps.executeUpdate();
+                if (ps.executeUpdate() != 1) {
+                    conexion.rollback();
+                    return false;
+                }
             }
 
-            // 5. Disminuir stock en MySQL
+            // 5. Descontar una unidad del stock
             String sqlActualizarStock = """
                     UPDATE libros
                     SET stock = stock - 1
                     WHERE id = ?
+                    AND stock > 0
                     """;
 
             try (PreparedStatement ps =
-                         conexion.prepareStatement(sqlActualizarStock)) {
+                         conexion.prepareStatement(
+                                 sqlActualizarStock
+                         )) {
 
                 ps.setInt(1, idLibro);
-                ps.executeUpdate();
+
+                if (ps.executeUpdate() != 1) {
+                    conexion.rollback();
+                    return false;
+                }
             }
 
-            // 6. Confirmar ambas operaciones
+            // 6. Confirmar transacción
             conexion.commit();
 
             System.out.println(
@@ -110,24 +168,14 @@ public class ServicioPrestamo {
             );
 
             System.out.println(
-                    "Fecha límite de devolución: "
-                            + fechaDevolucion
+                    "Fecha límite: " + fechaDevolucion
             );
 
             return true;
 
         } catch (SQLException e) {
 
-            if (conexion != null) {
-                try {
-                    conexion.rollback();
-                } catch (SQLException rollbackError) {
-                    System.err.println(
-                            "Error al realizar rollback: "
-                                    + rollbackError.getMessage()
-                    );
-                }
-            }
+            realizarRollback(conexion);
 
             System.err.println(
                     "Error al registrar préstamo: "
@@ -137,30 +185,23 @@ public class ServicioPrestamo {
             return false;
 
         } finally {
-
-            if (conexion != null) {
-
-                try {
-                    conexion.setAutoCommit(true);
-                } catch (SQLException e) {
-                    System.err.println(
-                            "Error al restaurar AutoCommit: "
-                                    + e.getMessage()
-                    );
-                }
-
-                try {
-                    conexion.close();
-                } catch (SQLException e) {
-                    System.err.println(
-                            "Error al cerrar conexión: "
-                                    + e.getMessage()
-                    );
-                }
-            }
+            cerrarConexion(conexion);
         }
     }
-    public synchronized boolean registrarDevolucion(int idPrestamo) {
+
+    // ==========================================
+    // REGISTRAR DEVOLUCIÓN
+    // ==========================================
+
+    public synchronized boolean registrarDevolucion(
+            int idPrestamo,
+            Usuario usuario
+    ) {
+
+        if (!tieneRolValido(usuario)
+                || idPrestamo <= 0) {
+            return false;
+        }
 
         Connection conexion = null;
 
@@ -171,13 +212,18 @@ public class ServicioPrestamo {
 
             conexion.setAutoCommit(false);
 
-            // 1. Buscar y bloquear el préstamo
+            // 1. Buscar préstamo y verificar titular
             String sqlPrestamo = """
-                SELECT id_libro, devuelto
-                FROM prestamos
-                WHERE id = ?
-                FOR UPDATE
-                """;
+                    SELECT
+                        p.id_libro,
+                        p.devuelto,
+                        e.rut
+                    FROM prestamos p
+                    INNER JOIN estudiantes e
+                        ON p.id_estudiante = e.id
+                    WHERE p.id = ?
+                    FOR UPDATE
+                    """;
 
             int idLibro;
             boolean devuelto;
@@ -190,54 +236,74 @@ public class ServicioPrestamo {
                 try (ResultSet rs = ps.executeQuery()) {
 
                     if (!rs.next()) {
-                        System.err.println("El préstamo no existe.");
                         conexion.rollback();
                         return false;
                     }
 
                     idLibro = rs.getInt("id_libro");
                     devuelto = rs.getBoolean("devuelto");
+
+                    String rutTitular = rs.getString("rut");
+
+                    if (!tienePermisoSobreRut(
+                            usuario,
+                            rutTitular
+                    )) {
+                        conexion.rollback();
+                        return false;
+                    }
                 }
             }
 
-            // 2. Evitar devolver dos veces el mismo préstamo
+            // 2. Impedir devolución duplicada
             if (devuelto) {
+
                 System.err.println(
-                        "El préstamo ya había sido devuelto."
+                        "El préstamo ya fue devuelto."
                 );
+
                 conexion.rollback();
                 return false;
             }
 
             // 3. Marcar préstamo como devuelto
             String sqlDevolucion = """
-                UPDATE prestamos
-                SET devuelto = TRUE
-                WHERE id = ?
-                """;
+                    UPDATE prestamos
+                    SET devuelto = TRUE
+                    WHERE id = ?
+                    AND devuelto = FALSE
+                    """;
 
             try (PreparedStatement ps =
                          conexion.prepareStatement(sqlDevolucion)) {
 
                 ps.setInt(1, idPrestamo);
-                ps.executeUpdate();
+
+                if (ps.executeUpdate() != 1) {
+                    conexion.rollback();
+                    return false;
+                }
             }
 
-            // 4. Devolver la unidad al stock
+            // 4. Recuperar unidad del stock
             String sqlStock = """
-                UPDATE libros
-                SET stock = stock + 1
-                WHERE id = ?
-                """;
+                    UPDATE libros
+                    SET stock = stock + 1
+                    WHERE id = ?
+                    """;
 
             try (PreparedStatement ps =
                          conexion.prepareStatement(sqlStock)) {
 
                 ps.setInt(1, idLibro);
-                ps.executeUpdate();
+
+                if (ps.executeUpdate() != 1) {
+                    conexion.rollback();
+                    return false;
+                }
             }
 
-            // 5. Confirmar las dos operaciones
+            // 5. Confirmar transacción
             conexion.commit();
 
             System.out.println(
@@ -248,16 +314,7 @@ public class ServicioPrestamo {
 
         } catch (SQLException e) {
 
-            if (conexion != null) {
-                try {
-                    conexion.rollback();
-                } catch (SQLException rollbackError) {
-                    System.err.println(
-                            "Error al realizar rollback: "
-                                    + rollbackError.getMessage()
-                    );
-                }
-            }
+            realizarRollback(conexion);
 
             System.err.println(
                     "Error al registrar devolución: "
@@ -267,28 +324,97 @@ public class ServicioPrestamo {
             return false;
 
         } finally {
+            cerrarConexion(conexion);
+        }
+    }
 
-            if (conexion != null) {
+    // ==========================================
+    // VALIDACIÓN DE ROLES Y PERMISOS
+    // ==========================================
 
-                try {
-                    conexion.setAutoCommit(true);
-                } catch (SQLException e) {
-                    System.err.println(
-                            "Error al restaurar AutoCommit: "
-                                    + e.getMessage()
-                    );
-                }
+    private boolean tieneRolValido(Usuario usuario) {
 
-                try {
-                    conexion.close();
-                } catch (SQLException e) {
-                    System.err.println(
-                            "Error al cerrar conexión: "
-                                    + e.getMessage()
-                    );
-                }
-            }
+        if (usuario == null) {
+            return false;
+        }
+
+        String rol = usuario.getRol();
+
+        return "bibliotecario".equalsIgnoreCase(rol)
+                || "estudiante".equalsIgnoreCase(rol);
+    }
+
+    private boolean tienePermisoSobreRut(
+            Usuario usuario,
+            String rutEstudiante
+    ) {
+
+        if (!tieneRolValido(usuario)
+                || rutEstudiante == null) {
+            return false;
+        }
+
+        if ("bibliotecario".equalsIgnoreCase(
+                usuario.getRol()
+        )) {
+            return true;
+        }
+
+        return rutEstudiante.equals(usuario.getRut());
+    }
+
+    // ==========================================
+    // MANEJO DE TRANSACCIONES
+    // ==========================================
+
+    private void realizarRollback(Connection conexion) {
+
+        if (conexion == null) {
+            return;
+        }
+
+        try {
+            conexion.rollback();
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "Error al realizar rollback: "
+                            + e.getMessage()
+            );
+        }
+    }
+
+    // ==========================================
+    // CIERRE DE CONEXIÓN
+    // ==========================================
+
+    private void cerrarConexion(Connection conexion) {
+
+        if (conexion == null) {
+            return;
+        }
+
+        try {
+            conexion.setAutoCommit(true);
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "Error al restaurar AutoCommit: "
+                            + e.getMessage()
+            );
+        }
+
+        try {
+            conexion.close();
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "Error al cerrar conexión: "
+                            + e.getMessage()
+            );
         }
     }
 }
-
